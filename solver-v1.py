@@ -1,4 +1,4 @@
-import math
+from math import floor
 import tkinter as tk
 
 # same as version 3 except entering sudoku with tkinter
@@ -25,6 +25,10 @@ columnIndex = [0, 1, 2, 0, 1, 2, 0, 1, 2, 3, 4, 5, 3, 4, 5, 3, 4, 5, 6, 7, 8, 6,
 
 
 # reminder: whenever you recompile, must re break
+class Box:
+    def __init__(self):
+        self.possibles = [[True for _ in range(9)] for _ in range(9)]
+
 
 class Puzzle:
     def __init__(self, p):
@@ -47,10 +51,10 @@ class Puzzle:
                     bottomPad = 5
                 entry.grid(row=i, column=j, padx=(0, rightPad), pady=(0, bottomPad))
         entries = Window.grid_slaves(row=None, column=None)
-        copyBtn = tk.Button(master=Window, text="Enter", width=10, command=lambda: solveSudoku(entries, self))
+        copyBtn = tk.Button(master=Window, text="Enter", width=10, command=lambda: solveSudoku(entries))
         copyBtn.grid(row=9, column=0, columnspan=9)
 
-        print(Window.grid_slaves(row=None, column=None))
+        # print(Window.grid_slaves(row=None, column=None))
         Window.mainloop()
 
     def __str__(self):
@@ -100,19 +104,16 @@ def breakColumns(code):
 
 # take list and return rows
 def breakRows(code):
-    rows = []
-    for i in range(9):
-        rows.append(code[i * 9:i * 9 + 9])
-    return rows
+    return [code[9 * i:9 * i + 9] for i in range(9)]
 
 
 # take list and return boxes
 def breakBoxes(code):
     boxes = []
-    for f in range(3):
-        for i in range(3):
+    for f in range(3):  # row of box in puzzle
+        for i in range(3):  # column of box in puzzle
             sBox = []
-            for n in range(3):
+            for n in range(3):  # row of cell in box
                 c = 9 * n + i * 3 + f * 27
                 sBox.append(code[c])
                 sBox.append(code[c + 1])
@@ -128,7 +129,7 @@ def compileBoxes(boxes):
         numbers.append(0)
     for box in range(9):
         for cell in range(9):
-            numberIndex = int((27 * math.floor(box / 3)) + (3 * (box % 3)) + (9 * math.floor(cell / 3)) + (cell % 3))
+            numberIndex = int((27 * floor(box / 3)) + (3 * (box % 3)) + (9 * floor(cell / 3)) + (cell % 3))
             numbers[numberIndex] = boxes[box][cell]
     return numbers
 
@@ -140,44 +141,36 @@ def compileRows(rows):
     return numbers
 
 
-# def compileColumns(columns):
-
-"""
-checkNumValues = [0, 1, 2, 3, 4, 5, 6, 7, 8]  # if its the only one in the box with that number as an option...
-for box in range(1):
-    checkNumValues.append(box)
-    print(checkNumValues)
-    for cell in range(9):
-        checkNumValues[cell] = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-        for checkNum in range(9):
-            checkNumValues[cell][checkNum] = [0, 0, 0, 0, 0, 0, 0, 0, 0]
-"""
-
-
+# Box focused break down:
+# 1. For all boxes, for all digits, checks all cells in box if digit can go there
+#  a. checks rows, columns, and box for conflicts
+# 2. If a digit can only go in one cell in a box, the value gets filled in
 def checkPuzzleAdvanced(code):
     rows = breakRows(code)
     columns = breakColumns(code)
     boxes = breakBoxes(code)
+
     for box in range(9):  # loop through boxes
         for digit in range(1, 10):  # loop through digits
-            for cell in range(9):  # loop through cells in box ()
-                if digit not in boxes[box]:
-                    row = 3 * math.floor(box / 3) + math.floor(cell / 3)
-                    numb = (27 * math.floor(box / 3)) + (3 * (box % 3)) + (9 * math.floor(cell / 3)) + (
-                            cell % 3)  # this is the current cells index position, i think
-                    column = numb % 3 + 3 * (math.floor(numb / 3) % 3)  # columnIndex[counter]
-                    values = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+            # checks if all cells of box are valid sports for digit
+            values = [0, 0, 0, 0, 0, 0, 0, 0, 0]  # "index" of box
+            for checkNum in range(9):
+                # print("---", floor(box/3), box%3)
+                if boxes[box][checkNum] != 0 or digit in rows[
+                    3 * floor(box / 3) + floor(checkNum / 3)] or digit in columns[
+                    3 * (box % 3) + checkNum % 3]:
+                    values[checkNum] = 1
 
-                    for checkNum in range(9):  # checks box and surroundings of box for digit
-                        if boxes[box][checkNum] != 0 or digit in rows[
-                            3 * math.floor(row / 3) + math.floor(checkNum / 3)] or digit in columns[
-                            3 * math.floor(column / 3) + checkNum % 3]:
-                            values[checkNum] = 1
+            # loop through cells in box
+            for cell in range(9):
+                if digit not in boxes[box]:
+                    row = 3 * floor(box / 3) + floor(cell / 3)
+                    numb = (27 * floor(box / 3)) + (3 * (box % 3)) + (9 * floor(cell / 3)) + (
+                            cell % 3)  # this is the current cells index position, i think
+                    column = numb % 3 + 3 * (floor(numb / 3) % 3)  # columnIndex[counter]
+
                     if values.count(0) == 1 and digit not in boxes[box] and digit not in rows[row] and digit not in \
                             columns[column] and rows[row][column] == 0:
-                        n = 0
-                        while values[n] != 0:
-                            n += 1
                         print(f"Row: {row}  column: {column}  becomes: {digit}  in box: {box + 1}  cell {cell + 1}")
                         rows[row][column] = digit
                         numeros = compileRows(rows)
@@ -192,11 +185,6 @@ def getSudoku():
     print("called")
     Window = tk.Tk()
 
-    # top=tk.Toplevel()
-    # rows = 9
-    # cols = 9
-
-    print("entered: ", 9, 9)
     for i in range(9):
         # print("i", i)
         Window.columnconfigure(i, )  # weight=1, minsize=50)
@@ -216,67 +204,58 @@ def getSudoku():
     copyBtn = tk.Button(master=Window, text="Enter", width=10, command=lambda: solveSudoku(entries))
     copyBtn.grid(row=9, column=0, columnspan=9)
 
-    print(Window.grid_slaves(row=None, column=None))
+    # print(Window.grid_slaves(row=None, column=None))
     Window.mainloop()
 
 
-def solveSudoku(entries): #, puzzle):
-    numbers = [0 for i in range(81)]
-    for i, entry in enumerate(entries):
-        if entry := entry.get():
-            numbers[80 - i] = int(entry)
-    print(numbers)
+def solveSudoku(p):  # , puzzle):
+    if not isinstance(p[0], int):  # check if entries are passed
+        numbers = [0 for i in range(81)]
+        for i, entry in enumerate(p):
+            if entry := entry.get():
+                numbers[80 - i] = int(entry)
+    else:
+        numbers = p
+    # print(numbers)
     display(numbers)
 
-    #checkPuzzleAdvanced
+    print("Found using basic means of comparison:")
     checker = []
     while 0 in numbers:
-        # for i in range (1):
+        # for _ in range(1):
         checker = numbers
         numbers = checkPuzzleAdvanced(numbers)
         if checker == numbers:
-            print("Too hard...")
+            print("Too hard...for normal methods...")
             display(numbers)
-            break
-        elif 0 not in numbers:
+            popup(numbers)
+            return False
+        elif 0 not in numbers:  # check if done
             display(numbers)
             print("Done.")
+            popup(numbers)
+            return True
+        break  #####
     popup(numbers)
 
+
 def popup(p):
-    print("oooo")
-    #solveSudoku(p)
+    print("Popup opened.")
     child = tk.Tk()
 
-    # top=tk.Toplevel()
-    #rows = 9
-    #cols = 9
-    #list = []
     rows = breakRows(p)
-    print(rows)
-    print("entered: ", rows, 9)
     for i in range(9):
-        # print("i", i)
         child.columnconfigure(i, )  # weight=1, minsize=50)
         child.rowconfigure(i, )  # weight=1, minsize=50)
-
         for j in range(0, 9):
-            # print("j", j)
-            # child.grid(row=i, column=j)
-
-            label = tk.Label(master=child, width=3, text=rows[i][j])  # {i} Column {j}")
-            # matrix[i, j] = entry
-            label.grid(row=i, column=j)  # pack(padx=2, pady=2)
-
-    # child.rowconfigure(rows, )
-    #print(list)
-    # for index, object in enumerate(child.grid_slaves(row=None, column=None)):
-    #    print(object, index)
-    #    matrix[i][j] = []
-    #copyBtn = tk.Button(master=child, text="Copy", width=10, command=lambda: print("copy"))
-    #copyBtn.grid(row=rows, column=0, columnspan=cols)
-
-    print(child.grid_slaves(row=None, column=None))
+            rightPad = 0
+            bottomPad = 0
+            if j == 2 or j == 5:
+                rightPad = 4
+            if i == 2 or i == 5:
+                bottomPad = 4
+            label = tk.Label(master=child, width=2, text=rows[i][j], borderwidth=0, background="white")
+            label.grid(row=i, column=j, padx=(1, rightPad), pady=(2, bottomPad))
     child.mainloop()
 
 
@@ -284,4 +263,8 @@ display(
     [0, 0, 0, 0, 0, 0, 0, 2, 8, 0, 6, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 4, 0, 1, 0, 0, 0, 5, 0, 0, 9, 7, 0, 3, 0, 0, 2, 0,
      4, 0, 0, 8, 0, 0, 0, 3, 0, 0, 0, 0, 4, 5, 0, 0, 1, 3, 0, 0, 9, 0, 0, 0, 0, 0, 5, 7, 0, 0, 2, 0, 9, 0, 0, 0, 8, 3,
      1, 7, 0, 0, 0])
-getSudoku()
+
+# getSudoku()
+
+solveSudoku(sudoku1)
+Puzzle()
