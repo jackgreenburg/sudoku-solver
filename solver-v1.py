@@ -8,7 +8,7 @@ import tkinter as tk
 sudoku1 = [0, 8, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 4, 9, 0, 3, 0, 0, 0, 0, 3, 0, 1, 0, 0, 9, 0, 4, 0, 8, 2, 0, 5, 0, 6,
            0, 0, 0, 0, 0, 6, 9, 0, 0, 6, 0, 0, 0, 5, 0, 0, 0, 3, 3, 1, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 5, 0, 1, 0,
            0, 0, 8, 0, 0, 0, 0, 0, 0]
-sudoku1 = [5, 3, 0, 0, 7, 0, 0, 0, 0, 6, 0, 0, 1, 9, 5, 0, 0, 0, 0, 9, 8, 0, 0, 0, 0, 6, 0, 8, 0, 0, 0, 6, 0, 0, 0, 3,
+sudoku2 = [5, 3, 0, 0, 7, 0, 0, 0, 0, 6, 0, 0, 1, 9, 5, 0, 0, 0, 0, 9, 8, 0, 0, 0, 0, 6, 0, 8, 0, 0, 0, 6, 0, 0, 0, 3,
            4, 0, 0, 8, 0, 3, 0, 0, 1, 7, 0, 0, 0, 2, 0, 0, 0, 6, 0, 6, 0, 0, 0, 0, 2, 8, 0, 0, 0, 0, 4, 1, 9, 0, 0, 5,
            0, 0, 0, 0, 8, 0, 0, 7, 9]
 total = sudoku1.count(0)
@@ -32,8 +32,12 @@ class Box:  # not used at the moment
 
 class Puzzle:  # not used at the moment
     def __init__(self, p):
-        self.puzzle = p
-
+        self.code = p
+        self.original = p
+        self.simplifiedRows = [[[False for _ in range(3)] for _ in range(9)] for _ in range(9)]  # True if value in sudoku
+        self.simplifiedCols = [[False for _ in range(9)] for _ in range(9)]
+        self.changed = 0
+    """
     def __init__(self):
         print("called")
         Window = tk.Tk()
@@ -56,7 +60,7 @@ class Puzzle:  # not used at the moment
 
         # print(Window.grid_slaves(row=None, column=None))
         Window.mainloop()
-
+    """
     def __str__(self):
         for i in range(9):
             if i == 0 or i == 3 or i == 6:
@@ -141,11 +145,48 @@ def compileRows(rows):
     return numbers
 
 
+def checkPuzzle(puzzleObj):
+    rows = breakRows(puzzleObj.code)
+    columns = breakColumns(puzzleObj.code)
+    boxes = breakBoxes(puzzleObj.code)
+    for box in range(9):  # loop through boxes
+        for digit in range(1, 10):  # loop through digits
+            # checks if all cells of box are valid sports for digit
+            values = [0, 0, 0, 0, 0, 0, 0, 0, 0]  # "index" of box
+            for checkNum in range(9):
+                if boxes[box][checkNum] != 0 or digit in rows[
+                    3 * floor(box / 3) + floor(checkNum / 3)] or digit in columns[
+                    3 * (box % 3) + checkNum % 3]:
+                    values[checkNum] = 1
+
+            # loop through cells in box
+            for cell in range(9):
+                if digit not in boxes[box]:
+                    row = 3 * floor(box / 3) + floor(cell / 3)
+                    numb = (27 * floor(box / 3)) + (3 * (box % 3)) + (9 * floor(cell / 3)) + (
+                            cell % 3)  # this is the current cells index position, i think
+                    column = numb % 3 + 3 * (floor(numb / 3) % 3)  # columnIndex[counter]
+
+                    if values.count(0) == 1 and digit not in boxes[box] and digit not in rows[row] and digit not in \
+                            columns[column] and rows[row][column] == 0:
+                        print(f"Row: {row}  column: {column}  becomes: {digit}  in box: {box + 1}  cell {cell + 1}")
+                        rows[row][column] = digit
+                        numeros = compileRows(rows)
+                        columns = breakColumns(numeros)
+                        boxes = breakBoxes(numeros)
+    numeros = compileRows(rows)
+    return numeros
+
+
 # Box focused break down:
 # 1. For all boxes, for all digits, checks all cells in box if digit can go there
 #  a. checks rows, columns, and box for conflicts
 # 2. If a digit can only go in one cell in a box, the value gets filled in
-def checkPuzzleAdvanced(code):
+
+# HUGE OPTIMIZATION TO MAKE: INSTEAD OF True True FalseING ROWS DO IT TO BOXES NO this was mega stupid
+# STILL HAVE TO SEPARATE ROWS AND COLUMNS
+def checkPuzzleAdvanced(puzzleObj):
+    code = puzzleObj.code
     rows = breakRows(code)
     columns = breakColumns(code)
     boxes = breakBoxes(code)
@@ -154,12 +195,19 @@ def checkPuzzleAdvanced(code):
         for digit in range(1, 10):  # loop through digits
             # checks if all cells of box are valid sports for digit
             values = [0, 0, 0, 0, 0, 0, 0, 0, 0]  # "index" of box
-            for checkNum in range(9):
-                # print("---", floor(box/3), box%3)
-                if boxes[box][checkNum] != 0 or digit in rows[
-                    3 * floor(box / 3) + floor(checkNum / 3)] or digit in columns[
-                    3 * (box % 3) + checkNum % 3]:
-                    values[checkNum] = 1
+            if digit in boxes[box] or False:
+                values = [1, 1, 1, 1, 1, 1, 1, 1, 1]
+            else:
+                for cell in range(9):
+                    r = 3 * floor(box / 3) + floor(cell / 3)
+                    if boxes[box][cell] != 0 \
+                            or digit in rows[r] \
+                            or digit in columns[3 * (box % 3) + cell % 3] \
+                            or puzzleObj.simplifiedRows[r][digit-1][box % 3]:
+                        values[cell] = 1
+                        if False and puzzleObj.simplifiedRows[r][digit-1][box%3]:
+                            print(f"Box: {box+1}, digit: {digit}, cell: {cell+1}, values: {values} --- FROOOOG")
+
             numZeros = values.count(0)
             # loop through cells in box
             for cell in range(9):
@@ -169,21 +217,33 @@ def checkPuzzleAdvanced(code):
                             cell % 3)  # this is the current cells index position, i think
                     column = numb % 3 + 3 * (floor(numb / 3) % 3)  # columnIndex[counter]
 
-
-                    if numZeros == 1 and digit not in boxes[box] and digit not in rows[row] and digit not in \
-                            columns[column] and rows[row][column] == 0:
+                    if numZeros == 1 and digit not in rows[row] and digit not in \
+                            columns[column] and rows[row][column] == 0 and values[cell] == 0:
                         print(f"Row: {row}  column: {column}  becomes: {digit}  in box: {box + 1}  cell {cell + 1}")
+                        if row == 8 and column == 0:
+                            print(values)
+                        puzzleObj.changed += 1
                         rows[row][column] = digit
                         numeros = compileRows(rows)
                         columns = breakColumns(numeros)
                         boxes = breakBoxes(numeros)
-                    elif numZeros == 2:
-                        print(f"Box: {box+1}, digit: {digit}, cell: {cell+1}, values: {values}")
+            if numZeros == 2:# and digit not in boxes[box]:
+
+                cellOfZero = []
+                for i in range(9):
+                    if values[i] == 0:
+                        cellOfZero.append(i)
+                if floor(cellOfZero[0]/3) == floor(cellOfZero[1]/3):  # if in same row
+                    #print("-----------",box%3)
+                    for i in range(1, 3):  # set other two boxes to not contain the value
+                        #box%3
+                        puzzleObj.simplifiedRows[3*floor(box / 3) + floor(cellOfZero[0]/3)][digit-1][(box+i) % 3] = True
+                        #print(f"#Row: {3*floor(box / 3) + floor(cellOfZero[0]/3)}, Box: {box}[{(box+i) % 3}], digit: {digit}, values: {values} --- FRoG")
             # check if zeros remaning equals 2 for 2 digits
             # compare to other
 
-    numeros = compileRows(rows)
-    return numeros
+    puzzleObj.code = compileRows(rows)
+    return puzzleObj
 
 
 def getSudoku():
@@ -213,25 +273,29 @@ def getSudoku():
     Window.mainloop()
 
 
-def solveSudoku(p):  # , puzzle):
-    if not isinstance(p[0], int):  # check if entries are passed
+def solveSudoku(puzzle):  # , puzzle):
+    if isinstance(puzzle, Puzzle):
+        numbers = puzzle.code
+    elif not isinstance(puzzle[0], int):  # check if entries are passed PROBLEMS MADE HERE DUE TO OOP
         numbers = [0 for i in range(81)]
-        for i, entry in enumerate(p):
+        for i, entry in enumerate(puzzle):
             if entry := entry.get():
                 numbers[80 - i] = int(entry)
     else:
-        numbers = p
+        numbers = puzzle
     # print(numbers)
     display(numbers)
 
-    print("Found using basic means of comparison:")
+    print("Found using B^) means of comparison:")
     checker = []
     while 0 in numbers:
         # for _ in range(1):
         checker = numbers
-        numbers = checkPuzzleAdvanced(numbers)
+        print("\nNEW CALL\n")
+        numbers = checkPuzzleAdvanced(puzzle).code
         if checker == numbers:
             print("Too hard...for normal methods...")
+            print(numbers)
             display(numbers)
             popup(numbers)
             return False
@@ -240,7 +304,7 @@ def solveSudoku(p):  # , puzzle):
             print("Done.")
             popup(numbers)
             return True
-        break  #####
+        #break  #####
     popup(numbers)
 
 
@@ -270,6 +334,10 @@ display(
      1, 7, 0, 0, 0])
 
 # getSudoku()
-
-solveSudoku(sudoku1)
+#popup(sudoku1)
+Psudoku1 = Puzzle(sudoku1)
+solveSudoku(Psudoku1)
+print("Changed:", Psudoku1.changed)
+for sR in Psudoku1.simplifiedRows:
+    print(sR)
 #Puzzle()
