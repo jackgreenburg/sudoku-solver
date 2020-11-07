@@ -25,12 +25,12 @@ columnIndex = [0, 1, 2, 0, 1, 2, 0, 1, 2, 3, 4, 5, 3, 4, 5, 3, 4, 5, 6, 7, 8, 6,
 
 
 # reminder: whenever you recompile, must re break
-class Box:
+class Box:  # not used at the moment
     def __init__(self):
         self.possibles = [[True for _ in range(9)] for _ in range(9)]
 
 
-class Puzzle:
+class Puzzle:  # not used at the moment
     def __init__(self, p):
         self.puzzle = p
 
@@ -160,7 +160,7 @@ def checkPuzzleAdvanced(code):
                     3 * floor(box / 3) + floor(checkNum / 3)] or digit in columns[
                     3 * (box % 3) + checkNum % 3]:
                     values[checkNum] = 1
-
+            numZeros = values.count(0)
             # loop through cells in box
             for cell in range(9):
                 if digit not in boxes[box]:
@@ -169,13 +169,18 @@ def checkPuzzleAdvanced(code):
                             cell % 3)  # this is the current cells index position, i think
                     column = numb % 3 + 3 * (floor(numb / 3) % 3)  # columnIndex[counter]
 
-                    if values.count(0) == 1 and digit not in boxes[box] and digit not in rows[row] and digit not in \
+
+                    if numZeros == 1 and digit not in boxes[box] and digit not in rows[row] and digit not in \
                             columns[column] and rows[row][column] == 0:
                         print(f"Row: {row}  column: {column}  becomes: {digit}  in box: {box + 1}  cell {cell + 1}")
                         rows[row][column] = digit
                         numeros = compileRows(rows)
                         columns = breakColumns(numeros)
                         boxes = breakBoxes(numeros)
+                    elif numZeros == 2:
+                        print(f"Box: {box+1}, digit: {digit}, cell: {cell+1}, values: {values}")
+            # check if zeros remaning equals 2 for 2 digits
+            # compare to other
 
     numeros = compileRows(rows)
     return numeros
@@ -267,4 +272,4 @@ display(
 # getSudoku()
 
 solveSudoku(sudoku1)
-Puzzle()
+#Puzzle()
