@@ -11,6 +11,7 @@ sudoku1 = [0, 8, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 4, 9, 0, 3, 0, 0, 0, 0, 3, 0, 
 sudoku2 = [5, 3, 0, 0, 7, 0, 0, 0, 0, 6, 0, 0, 1, 9, 5, 0, 0, 0, 0, 9, 8, 0, 0, 0, 0, 6, 0, 8, 0, 0, 0, 6, 0, 0, 0, 3,
            4, 0, 0, 8, 0, 3, 0, 0, 1, 7, 0, 0, 0, 2, 0, 0, 0, 6, 0, 6, 0, 0, 0, 0, 2, 8, 0, 0, 0, 0, 4, 1, 9, 0, 0, 5,
            0, 0, 0, 0, 8, 0, 0, 7, 9]
+sudoku3 = [1, 8, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 6, 0, 0, 0, 2, 2, 9, 0, 0, 3, 0, 0, 1, 7, 4, 2, 0, 0, 0, 9, 0, 0, 0, 7, 0, 0, 1, 0, 4, 0, 0, 8, 0, 0, 0, 7, 0, 0, 0, 4, 5, 9, 5, 0, 0, 7, 0, 0, 3, 6, 3, 0, 0, 0, 1, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 5, 4]
 total = sudoku1.count(0)
 
 # numbers=[6,9,3,0,7,0,0,0,5,0,4,0,0,5,9,2,6,0,0,2,0,8,0,6,4,9,0,4,0,2,6,9,0,0,5,0,8,0,0,0,3,5,9,0,4,3,0,9,0,0,8,0,7,1,0,0,0,9,0,4,7,3,6,2,6,7,5,8,0,0,0,0,0,3,4,1,0,0,5,0,2]
@@ -227,18 +228,27 @@ def checkPuzzleAdvanced(puzzleObj):
                         numeros = compileRows(rows)
                         columns = breakColumns(numeros)
                         boxes = breakBoxes(numeros)
-            if numZeros == 2:# and digit not in boxes[box]:
-
+            if numZeros == 2 or numZeros == 3:# and digit not in boxes[box]:
                 cellOfZero = []
                 for i in range(9):
                     if values[i] == 0:
                         cellOfZero.append(i)
-                if floor(cellOfZero[0]/3) == floor(cellOfZero[1]/3):  # if in same row
-                    #print("-----------",box%3)
+                doTheThing = True
+                for i in range(len(cellOfZero)-1):
+                    if not floor(cellOfZero[i]/3) == floor(cellOfZero[i+1]/3):
+                        doTheThing = False
+                if doTheThing:
                     for i in range(1, 3):  # set other two boxes to not contain the value
-                        #box%3
-                        puzzleObj.simplifiedRows[3*floor(box / 3) + floor(cellOfZero[0]/3)][digit-1][(box+i) % 3] = True
-                        #print(f"#Row: {3*floor(box / 3) + floor(cellOfZero[0]/3)}, Box: {box}[{(box+i) % 3}], digit: {digit}, values: {values} --- FRoG")
+                        puzzleObj.simplifiedRows[3*floor(box/3) + floor(cellOfZero[0]/3)][digit - 1][(box+i) % 3] = True
+
+                if False and floor(cellOfZero[0]/3) == floor(cellOfZero[1]/3):  # if in same row
+                    if numZeros == 3:
+                        if floor(cellOfZero[0]/3) == floor(cellOfZero[2]/3):
+                            for i in range(1, 3):  # set other two boxes to not contain the value
+                                puzzleObj.simplifiedRows[3 * floor(box / 3) + floor(cellOfZero[0] / 3)][digit - 1][(box + i) % 3] = True
+                    else:  # inneffective
+                        for i in range(1, 3):  # set other two boxes to not contain the value
+                            puzzleObj.simplifiedRows[3*floor(box / 3) + floor(cellOfZero[0]/3)][digit-1][(box+i) % 3] = True
             # check if zeros remaning equals 2 for 2 digits
             # compare to other
 
@@ -281,6 +291,8 @@ def solveSudoku(puzzle):  # , puzzle):
         for i, entry in enumerate(puzzle):
             if entry := entry.get():
                 numbers[80 - i] = int(entry)
+        puzzle = Puzzle(numbers)
+        print(numbers)
     else:
         numbers = puzzle
     # print(numbers)
@@ -333,8 +345,9 @@ display(
      4, 0, 0, 8, 0, 0, 0, 3, 0, 0, 0, 0, 4, 5, 0, 0, 1, 3, 0, 0, 9, 0, 0, 0, 0, 0, 5, 7, 0, 0, 2, 0, 9, 0, 0, 0, 8, 3,
      1, 7, 0, 0, 0])
 
-# getSudoku()
+
 #popup(sudoku1)
+#getSudoku()
 Psudoku1 = Puzzle(sudoku1)
 solveSudoku(Psudoku1)
 print("Changed:", Psudoku1.changed)
