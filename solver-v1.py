@@ -35,8 +35,10 @@ class Puzzle:  # not used at the moment
     def __init__(self, p):
         self.code = p
         self.original = p
+        # row then digit then column of box
         self.simplifiedRows = [[[False for _ in range(3)] for _ in range(9)] for _ in range(9)]  # True if value in sudoku
-        self.simplifiedCols = [[False for _ in range(9)] for _ in range(9)]
+        # column then digit then row of box
+        self.simplifiedCols = [[[False for _ in range(3)] for _ in range(9)] for _ in range(9)]
         self.changed = 0
     """
     def __init__(self):
@@ -201,54 +203,54 @@ def checkPuzzleAdvanced(puzzleObj):
             else:
                 for cell in range(9):
                     r = 3 * floor(box / 3) + floor(cell / 3)
+                    c = 3 * (box % 3) + cell % 3
                     if boxes[box][cell] != 0 \
                             or digit in rows[r] \
-                            or digit in columns[3 * (box % 3) + cell % 3] \
-                            or puzzleObj.simplifiedRows[r][digit-1][box % 3]:
+                            or digit in columns[c] \
+                            or puzzleObj.simplifiedRows[r][digit-1][box % 3] \
+                            or puzzleObj.simplifiedCols[c][digit-1][floor(box/3)]:
                         values[cell] = 1
-                        if False and puzzleObj.simplifiedRows[r][digit-1][box%3]:
-                            print(f"Box: {box+1}, digit: {digit}, cell: {cell+1}, values: {values} --- FROOOOG")
+                        if True and puzzleObj.simplifiedRows[r][digit-1][box%3]:
+                            print(f"Box: {box+1}, digit: {digit}, cell: {cell+1}, values: {values} --- FROOOOG" )
+                        if True and puzzleObj.simplifiedCols[r][digit-1][floor(box/3)]:
+                            print(f"Box: {box+1}, digit: {digit}, cell: {cell+1}, values: {values} --- LOG", puzzleObj.simplifiedCols[r][digit-1])
+                numZeros = values.count(0)
+                # loop through cells in box
+                for cell in range(9):
+                    if digit not in boxes[box]:
+                        row = 3 * floor(box / 3) + floor(cell / 3)
+                        numb = (27 * floor(box / 3)) + (3 * (box % 3)) + (9 * floor(cell / 3)) + (
+                                cell % 3)  # this is the current cells index position, i think
+                        column = numb % 3 + 3 * (floor(numb / 3) % 3)  # columnIndex[counter]
 
-            numZeros = values.count(0)
-            # loop through cells in box
-            for cell in range(9):
-                if digit not in boxes[box]:
-                    row = 3 * floor(box / 3) + floor(cell / 3)
-                    numb = (27 * floor(box / 3)) + (3 * (box % 3)) + (9 * floor(cell / 3)) + (
-                            cell % 3)  # this is the current cells index position, i think
-                    column = numb % 3 + 3 * (floor(numb / 3) % 3)  # columnIndex[counter]
+                        if numZeros == 1 and digit not in rows[row] and digit not in \
+                                columns[column] and rows[row][column] == 0 and values[cell] == 0:
+                            print(f"Row: {row}  column: {column}  becomes: {digit}  in box: {box + 1}  cell {cell + 1}")
+                            if row == 8 and column == 0:
+                                print(values)
+                            puzzleObj.changed += 1
+                            rows[row][column] = digit
+                            numeros = compileRows(rows)
+                            columns = breakColumns(numeros)
+                            boxes = breakBoxes(numeros)
+                if numZeros == 2 or numZeros == 3:# and digit not in boxes[box]:
+                    cellOfZero = [i for i in range(9) if values[i] == 0]
+                    doTheThingRows = True  # set to False to turn off cols matching
+                    doTheThingCols = True  # set to False to turn off cols matching
+                    for i in range(len(cellOfZero)-1):
+                        if not floor(cellOfZero[i]/3) == floor(cellOfZero[i+1]/3):
+                            doTheThingRows = False
+                        if not cellOfZero[i] % 3 == cellOfZero[i+1] % 3:
+                            doTheThingCols = False
+                    if doTheThingCols:
+                        print(f"Do the things cols b:{box} d:{digit} coZ:{cellOfZero} vs:{values} --- {3*(box % 3) + cellOfZero[0] % 3}{digit - 1}{floor(box/3)%3}")
+                        puzzleObj.simplifiedCols[3*(box % 3) + cellOfZero[0] % 3][digit - 1][floor(box/3 + 1) % 3] = True
+                        puzzleObj.simplifiedCols[3*(box % 3) + cellOfZero[0] % 3][digit - 1][floor(box/3 + 2) % 3] = True
+                        print("   ",puzzleObj.simplifiedCols[3*(box % 3) + cellOfZero[0] % 3][digit - 1],cellOfZero[0] % 3,cellOfZero[0], cellOfZero )
+                    if doTheThingRows:
+                        puzzleObj.simplifiedRows[3*floor(box/3) + floor(cellOfZero[0]/3)][digit - 1][(box+1) % 3] = True
+                        puzzleObj.simplifiedRows[3*floor(box/3) + floor(cellOfZero[0]/3)][digit - 1][(box+2) % 3] = True
 
-                    if numZeros == 1 and digit not in rows[row] and digit not in \
-                            columns[column] and rows[row][column] == 0 and values[cell] == 0:
-                        print(f"Row: {row}  column: {column}  becomes: {digit}  in box: {box + 1}  cell {cell + 1}")
-                        if row == 8 and column == 0:
-                            print(values)
-                        puzzleObj.changed += 1
-                        rows[row][column] = digit
-                        numeros = compileRows(rows)
-                        columns = breakColumns(numeros)
-                        boxes = breakBoxes(numeros)
-            if numZeros == 2 or numZeros == 3:# and digit not in boxes[box]:
-                cellOfZero = []
-                for i in range(9):
-                    if values[i] == 0:
-                        cellOfZero.append(i)
-                doTheThing = True
-                for i in range(len(cellOfZero)-1):
-                    if not floor(cellOfZero[i]/3) == floor(cellOfZero[i+1]/3):
-                        doTheThing = False
-                if doTheThing:
-                    for i in range(1, 3):  # set other two boxes to not contain the value
-                        puzzleObj.simplifiedRows[3*floor(box/3) + floor(cellOfZero[0]/3)][digit - 1][(box+i) % 3] = True
-
-                if False and floor(cellOfZero[0]/3) == floor(cellOfZero[1]/3):  # if in same row
-                    if numZeros == 3:
-                        if floor(cellOfZero[0]/3) == floor(cellOfZero[2]/3):
-                            for i in range(1, 3):  # set other two boxes to not contain the value
-                                puzzleObj.simplifiedRows[3 * floor(box / 3) + floor(cellOfZero[0] / 3)][digit - 1][(box + i) % 3] = True
-                    else:  # inneffective
-                        for i in range(1, 3):  # set other two boxes to not contain the value
-                            puzzleObj.simplifiedRows[3*floor(box / 3) + floor(cellOfZero[0]/3)][digit-1][(box+i) % 3] = True
             # check if zeros remaning equals 2 for 2 digits
             # compare to other
 
@@ -346,11 +348,15 @@ display(
      1, 7, 0, 0, 0])
 
 
-#popup(sudoku1)
+popup(sudoku3)
 #getSudoku()
 Psudoku1 = Puzzle(sudoku1)
 solveSudoku(Psudoku1)
 print("Changed:", Psudoku1.changed)
 for sR in Psudoku1.simplifiedRows:
     print(sR)
+
+print()
+for sC in Psudoku1.simplifiedCols:
+    print(sC)
 #Puzzle()
