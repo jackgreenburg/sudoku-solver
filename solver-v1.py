@@ -1,5 +1,12 @@
+"""
+sudoku solving tools--no generalized solution
+still uses floor() instead of //
+allows for sudoku to be made from 100% user input from tkinter winder
+"""
+
 from math import floor
 import tkinter as tk
+
 
 # same as version 3 except entering sudoku with tkinter
 # COMPILER DEFINED THINGS !!

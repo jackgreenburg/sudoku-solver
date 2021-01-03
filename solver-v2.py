@@ -1,10 +1,14 @@
 """
-Sudoku generator made for Sophomore Seminar Fall 2020
+sudoku generator finished for Sophomore Seminar Fall 2020
+full sudoku generator, checker, and solver
+not optimal--most recent solver was not used due to its added complexity and time constraints
+fairly polished gui interactions
 """
 
 import tkinter as tk
 import random
 import os.path
+
 
 # create new solved sudoku
 def generate():
@@ -120,6 +124,7 @@ def checkCompatibility(puzzle, index):
             if puzzle[(27 * (box // 3)) + (3 * (box % 3)) + (9 * (i // 3)) + (i % 3)] == new:
                 return False
     return True
+
 
 """
 # check that the number of each digit in a grouping is not larger than 1
@@ -302,6 +307,7 @@ def home():
     mainLbl.pack(padx=30)
     newBtn = tk.Button(master=root, text="Generate", font=("Arial", 15), width=12, command=lambda: popupSolver(trim(generate())))
     newBtn.pack(pady=(15, 10))
+    # check if the logo exists
     if os.path.isfile("SudokuLogo.png"):
         icon1 = tk.PhotoImage(file="SudokuLogo.png")
         root.iconphoto(True, icon1)
