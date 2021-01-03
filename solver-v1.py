@@ -19,10 +19,10 @@ total = sudoku1.count(0)
 boxIndex = [0, 1, 2, 9, 10, 11, 18, 19, 20, 3, 4, 5, 12, 13, 14, 21, 22, 23, 6, 7, 8, 15, 16, 17, 24, 25, 26, 27, 28,
             29, 26, 27, 28, 45, 46, 47, 30, 31, 32, 39, 40, 41, 48, 49, 50, 33, 34, 35, 42, 43, 44, 51, 52, 53, 54, 55,
             56, 63, 64, 65, 72, 73, 74, 57, 58, 59, 66, 67, 68, 75, 76, 77, 60, 61, 62, 69, 70, 71, 78, 79,
-            80]  # [0,3,6,1,5,7,2,4,8]
+            80]  # not currently used
 columnIndex = [0, 1, 2, 0, 1, 2, 0, 1, 2, 3, 4, 5, 3, 4, 5, 3, 4, 5, 6, 7, 8, 6, 7, 8, 6, 7, 8, 0, 1, 2, 0, 1, 2, 0, 1,
                2, 3, 4, 5, 3, 4, 5, 3, 4, 5, 6, 7, 8, 6, 7, 8, 6, 7, 8, 0, 1, 2, 0, 1, 2, 0, 1, 2, 3, 4, 5, 3, 4, 5, 3,
-               4, 5, 6, 7, 8, 6, 7, 8, 6, 7, 8]
+               4, 5, 6, 7, 8, 6, 7, 8, 6, 7, 8]  # not currently used
 
 
 # reminder: whenever you recompile, must re break
@@ -136,7 +136,7 @@ def compileBoxes(boxes):
         numbers.append(0)
     for box in range(9):
         for cell in range(9):
-            numberIndex = int((27 * floor(box / 3)) + (3 * (box % 3)) + (9 * floor(cell / 3)) + (cell % 3))
+            numberIndex = int((27 * (box // 3)) + (3 * (box % 3)) + (9 * floor(cell / 3)) + (cell % 3))
             numbers[numberIndex] = boxes[box][cell]
     return numbers
 
@@ -210,10 +210,6 @@ def checkPuzzleAdvanced(puzzleObj):
                             or puzzleObj.simplifiedRows[r][digit-1][box % 3] \
                             or puzzleObj.simplifiedCols[c][digit-1][floor(box/3)]:
                         values[cell] = 1
-                        if True and puzzleObj.simplifiedRows[r][digit-1][box%3]:
-                            print(f"Box: {box+1}, digit: {digit}, cell: {cell+1}, values: {values} --- FROOOOG" )
-                        if True and puzzleObj.simplifiedCols[r][digit-1][floor(box/3)]:
-                            print(f"Box: {box+1}, digit: {digit}, cell: {cell+1}, values: {values} --- LOG", puzzleObj.simplifiedCols[r][digit-1])
                 numZeros = values.count(0)
                 # loop through cells in box
                 for cell in range(9):
@@ -226,8 +222,6 @@ def checkPuzzleAdvanced(puzzleObj):
                         if numZeros == 1 and digit not in rows[row] and digit not in \
                                 columns[column] and rows[row][column] == 0 and values[cell] == 0:
                             print(f"Row: {row}  column: {column}  becomes: {digit}  in box: {box + 1}  cell {cell + 1}")
-                            if row == 8 and column == 0:
-                                print(values)
                             puzzleObj.changed += 1
                             rows[row][column] = digit
                             numeros = compileRows(rows)
@@ -243,10 +237,8 @@ def checkPuzzleAdvanced(puzzleObj):
                         if not cellOfZero[i] % 3 == cellOfZero[i+1] % 3:
                             doTheThingCols = False
                     if doTheThingCols:
-                        print(f"Do the things cols b:{box} d:{digit} coZ:{cellOfZero} vs:{values} --- {3*(box % 3) + cellOfZero[0] % 3}{digit - 1}{floor(box/3)%3}")
                         puzzleObj.simplifiedCols[3*(box % 3) + cellOfZero[0] % 3][digit - 1][floor(box/3 + 1) % 3] = True
                         puzzleObj.simplifiedCols[3*(box % 3) + cellOfZero[0] % 3][digit - 1][floor(box/3 + 2) % 3] = True
-                        print("   ",puzzleObj.simplifiedCols[3*(box % 3) + cellOfZero[0] % 3][digit - 1],cellOfZero[0] % 3,cellOfZero[0], cellOfZero )
                     if doTheThingRows:
                         puzzleObj.simplifiedRows[3*floor(box/3) + floor(cellOfZero[0]/3)][digit - 1][(box+1) % 3] = True
                         puzzleObj.simplifiedRows[3*floor(box/3) + floor(cellOfZero[0]/3)][digit - 1][(box+2) % 3] = True
@@ -301,7 +293,6 @@ def solveSudoku(puzzle):  # , puzzle):
     display(numbers)
 
     print("Found using B^) means of comparison:")
-    checker = []
     while 0 in numbers:
         # for _ in range(1):
         checker = numbers
@@ -318,7 +309,6 @@ def solveSudoku(puzzle):  # , puzzle):
             print("Done.")
             popup(numbers)
             return True
-        #break  #####
     popup(numbers)
 
 
@@ -347,16 +337,9 @@ display(
      4, 0, 0, 8, 0, 0, 0, 3, 0, 0, 0, 0, 4, 5, 0, 0, 1, 3, 0, 0, 9, 0, 0, 0, 0, 0, 5, 7, 0, 0, 2, 0, 9, 0, 0, 0, 8, 3,
      1, 7, 0, 0, 0])
 
-
-popup(sudoku3)
-#getSudoku()
+getSudoku()
 Psudoku1 = Puzzle(sudoku1)
-solveSudoku(Psudoku1)
+#solveSudoku(Psudoku1)
 print("Changed:", Psudoku1.changed)
-for sR in Psudoku1.simplifiedRows:
-    print(sR)
 
-print()
-for sC in Psudoku1.simplifiedCols:
-    print(sC)
 #Puzzle()
