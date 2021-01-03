@@ -194,7 +194,7 @@ def checkPuzzle(puzzleObj):
 # 2. If a digit can only go in one cell in a box, the value gets filled in
 
 # HUGE OPTIMIZATION TO MAKE: INSTEAD OF True True FalseING ROWS DO IT TO BOXES NO this was mega stupid
-# STILL HAVE TO SEPARATE ROWS AND COLUMNS
+# STILL HAVE TO SEPARATE ROWS AND COLUMNS I think I did this
 def checkPuzzleAdvanced(puzzleObj):
     code = puzzleObj.code
     rows = breakRows(code)
