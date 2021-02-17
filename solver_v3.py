@@ -1,7 +1,6 @@
 """
-sudoku generator finished for Sophomore Seminar Fall 2020
 full sudoku generator, checker, and solver
-not optimal--most recent solver was not used due to its added complexity and time constraints
+upgrading from v2 to v3 makes slightly harder sudoku
 fairly polished gui interactions
 """
 
@@ -20,64 +19,95 @@ def generate():
     return solve(sudoku)
 
 
-# this code just tries to solve the puzzle using basic techniques (not the most advanced)
-# it is needed because I need to ensure puzzles can be solved without guessing
-def checkPuzzle(puzzle):
-    rows = breakRows(puzzle)
-    columns = breakColumns(puzzle)
-    boxes = breakBoxes(puzzle)
+# this code solves puzzles using only logical processes
+# it is needed in order to ensure puzzles can be solved without guessing
+# cannot easily use puzzle object that was used in v1 due to the recursion required
+def checkPuzzleAdvanced(code):
+    code = code
+    rows = breakRows(code)
+    columns = breakColumns(code)
+    boxes = breakBoxes(code)
+
+    # row then digit then column of box
+    simplifiedRows = [[[False for _ in range(3)] for _ in range(9)] for _ in range(9)]  # True if value in sudoku
+    # column then digit then row of box
+    simplifiedCols = [[[False for _ in range(3)] for _ in range(9)] for _ in range(9)]
+
     for box in range(9):  # loop through boxes
         for digit in range(1, 10):  # loop through digits
             # checks if all cells of box are valid sports for digit
             values = [0, 0, 0, 0, 0, 0, 0, 0, 0]  # "index" of box
-            for checkNum in range(9):
-                if boxes[box][checkNum] != 0 or digit in rows[
-                    3 * (box // 3) + (checkNum // 3)] or digit in columns[
-                    3 * (box % 3) + checkNum % 3]:
-                    values[checkNum] = 1
+            if digit in boxes[box] or False:
+                values = [1, 1, 1, 1, 1, 1, 1, 1, 1]
+            else:
+                for cell in range(9):
+                    r = 3 * (box // 3) + (cell // 3)
+                    c = 3 * (box % 3) + cell % 3
+                    if boxes[box][cell] != 0 \
+                            or digit in rows[r] \
+                            or digit in columns[c] \
+                            or simplifiedRows[r][digit-1][box % 3] \
+                            or simplifiedCols[c][digit-1][box // 3]:
+                        values[cell] = 1
+                numZeros = values.count(0)
+                # loop through cells in box
+                for cell in range(9):
+                    if digit not in boxes[box]:
+                        row = 3 * (box // 3) + (cell // 3)
+                        numb = (27 * (box // 3)) + (3 * (box % 3)) + (9 * (cell // 3)) + (
+                                cell % 3)  # this is the current cells index position, i think
+                        column = numb % 3 + 3 * ((numb // 3) % 3)  # columnIndex[counter]
 
-            # loop through cells in box
-            for cell in range(9):
-                if digit not in boxes[box]:
-                    row = 3 * (box // 3) + (cell // 3)
-                    numb = (27 * (box // 3)) + (3 * (box % 3)) + (9 * (cell // 3)) + (
-                            cell % 3)  # this is the current cells index position, i think
-                    column = numb % 3 + 3 * ((numb // 3) % 3)  # columnIndex[counter]
+                        if numZeros == 1 and digit not in rows[row] and digit not in \
+                                columns[column] and rows[row][column] == 0 and values[cell] == 0:
+                            rows[row][column] = digit
+                            numeros = compileRows(rows)
+                            columns = breakColumns(numeros)
+                            boxes = breakBoxes(numeros)
 
-                    if values.count(0) == 1 and digit not in boxes[box] and digit not in rows[row] and digit not in \
-                            columns[column] and rows[row][column] == 0:
-                        rows[row][column] = digit
-                        numeros = compileRows(rows)
-                        columns = breakColumns(numeros)
-                        boxes = breakBoxes(numeros)
-    numeros = compileRows(rows)
-    return numeros
+                # check if multiple of same are in a line
+                if numZeros == 2 or numZeros == 3:  # and digit not in boxes[box]:
+                    cellOfZero = [i for i in range(9) if values[i] == 0]
+                    doTheThingRows = True  # set to False to turn off rows matching
+                    doTheThingCols = True  # set to False to turn off cols matching
+                    for i in range(len(cellOfZero)-1):
+                        if not (cellOfZero[i]//3) == (cellOfZero[i+1]//3):
+                            doTheThingRows = False
+                        if not cellOfZero[i] % 3 == cellOfZero[i+1] % 3:
+                            doTheThingCols = False
+                    if doTheThingCols:
+                        simplifiedCols[3*(box % 3) + cellOfZero[0] % 3][digit - 1][(box//3 + 1) % 3] = True
+                        simplifiedCols[3*(box % 3) + cellOfZero[0] % 3][digit - 1][(box//3 + 2) % 3] = True
+                    if doTheThingRows:
+                        simplifiedRows[3*(box//3) + (cellOfZero[0]//3)][digit - 1][(box+1) % 3] = True
+                        simplifiedRows[3*(box//3) + (cellOfZero[0]//3)][digit - 1][(box+2) % 3] = True
+    return compileRows(rows)
 
 
 # check that puzzle can be solved without guessing
 def checkValid(puzzle):
     while 0 in puzzle:
         checker = puzzle
-        puzzle = checkPuzzle(puzzle.copy())  # copy
+        puzzle = checkPuzzleAdvanced(puzzle.copy())  # copy
         if checker == puzzle:
             return False
     return True  # check(puzzle)
 
 
 # trim solution to create new puzzle
-# if not broken at 30, trims to usually 26 or 27, but it has trimmed to as low as 23
+# if not set to end early trims, on average usually 25.24, has trimmed to as low as 23
 def trim(solution):
     trimmed = solution.copy()
     indices = [i for i in range(81)]
     random.shuffle(indices)
-    counter = 0
+    counter = 0  # number of filled squares
     for index in indices:
         trimmed[index] = 0
         if not checkValid(trimmed):
             trimmed[index] = solution[index]
         else:
             counter += 1
-        if counter == 50 and False:  # delete this for harder sudoku
+        if counter == 50 and False:  # change this for different difficulty
             break
     return trimmed
 
@@ -126,31 +156,6 @@ def checkCompatibility(puzzle, index):
                 return False
     return True
 
-
-"""
-# check that the number of each digit in a grouping is not larger than 1
-def checkMultitude(sect):
-    for cell in sect:
-        if not cell == 0:
-            if sect.count(cell) > 1:
-                return False
-    return True
-
-
-# This checks that a puzzle does not actively have any contradictions
-# I think this function and its use are superfluous at the moment
-def check(puzzle):
-    for box in breakBoxes(puzzle):
-        if not checkMultitude(box):
-            return False
-    for row in breakRows(puzzle):
-        if not checkMultitude(row):
-            return False
-    for col in breakColumns(puzzle):
-        if not checkMultitude(col):
-            return False
-    return True
-"""
 
 # take list and return columns
 def breakColumns(code):
@@ -229,7 +234,7 @@ def popup(p):
 def popupSolver(p):
     solution = solve(p.copy())
     child = tk.Tk()
-    child.title("sudoku-v2")
+    child.title("solver-v3")
     child.configure(background="black")
     rows = breakRows(p)
     for i in range(9):
@@ -299,8 +304,8 @@ def checkSolution(puzzle, solution):
 # main method basically
 def home():
     root = tk.Tk()
-    root.title("sudoku-v2")
-    header = "Sudoku Solver V2"
+    root.title("sudoku-v3")
+    header = "Sudoku Solver V3"
     headLbl = tk.Label(master=root, text=header, font=("Arial", 25))
     headLbl.pack(padx=5)
     main = "Click the button to create a new\nrandomized sudoku."
@@ -308,7 +313,7 @@ def home():
     mainLbl.pack(padx=30)
     newBtn = tk.Button(master=root, text="Generate", font=("Arial", 15), width=12, command=lambda: popupSolver(trim(generate())))
     newBtn.pack(pady=(15, 10))
-    # check if the logo exists
+    # check if the logo exists in current directory
     if os.path.isfile("SudokuLogo.png"):
         icon1 = tk.PhotoImage(file="SudokuLogo.png")
         root.iconphoto(True, icon1)
