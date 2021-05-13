@@ -33,12 +33,53 @@ def checkPuzzleAdvanced(code):
     # column then digit then row of box
     simplifiedCols = [[[False for _ in range(3)] for _ in range(9)] for _ in range(9)]
 
+    # first loop over values to set simplified cols and rows arrays
+    # this should not be done every time, one should be initialized and then updated (probably)
+    # also, the values list is obviously done twice per cell per digit
     for box in range(9):  # loop through boxes
         for digit in range(1, 10):  # loop through digits
             # checks if all cells of box are valid sports for digit
             values = [0, 0, 0, 0, 0, 0, 0, 0, 0]  # "index" of box
             if digit in boxes[box] or False:
-                values = [1, 1, 1, 1, 1, 1, 1, 1, 1]
+                for i in range(9):
+                    values[i] = 1
+            else:
+                for cell in range(9):
+                    r = 3 * (box // 3) + (cell // 3)
+                    c = 3 * (box % 3) + cell % 3
+                    if boxes[box][cell] != 0 \
+                            or digit in rows[r] \
+                            or digit in columns[c] \
+                            or simplifiedRows[r][digit-1][box % 3] \
+                            or simplifiedCols[c][digit-1][box // 3]:
+                        values[cell] = 1
+
+                # check if multiple of same are in a line
+                numZeros = values.count(0)
+                if numZeros == 2 or numZeros == 3:  # and digit not in boxes[box]:
+                    cellOfZero = [i for i in range(9) if values[i] == 0]
+                    doTheThingRows = True  # set to False to turn off rows matching
+                    doTheThingCols = True  # set to False to turn off cols matching
+                    for i in range(len(cellOfZero)-1):
+                        if not (cellOfZero[i]//3) == (cellOfZero[i+1]//3):
+                            doTheThingRows = False
+                        if not cellOfZero[i] % 3 == cellOfZero[i+1] % 3:
+                            doTheThingCols = False
+                    if doTheThingCols:
+                        simplifiedCols[3*(box % 3) + cellOfZero[0] % 3][digit - 1][(box//3 + 1) % 3] = True
+                        simplifiedCols[3*(box % 3) + cellOfZero[0] % 3][digit - 1][(box//3 + 2) % 3] = True
+                    if doTheThingRows:
+                        simplifiedRows[3*(box//3) + (cellOfZero[0]//3)][digit - 1][(box+1) % 3] = True
+                        simplifiedRows[3*(box//3) + (cellOfZero[0]//3)][digit - 1][(box+2) % 3] = True
+
+    # now loop over to check
+    for box in range(9):  # loop through boxes
+        for digit in range(1, 10):  # loop through digits
+            # checks if all cells of box are valid sports for digit
+            values = [0, 0, 0, 0, 0, 0, 0, 0, 0]  # "index" of box
+            if digit in boxes[box] or False:
+                for i in range(9):
+                    values[i] = 1
             else:
                 for cell in range(9):
                     r = 3 * (box // 3) + (cell // 3)
@@ -64,23 +105,6 @@ def checkPuzzleAdvanced(code):
                             numeros = compileRows(rows)
                             columns = breakColumns(numeros)
                             boxes = breakBoxes(numeros)
-
-                # check if multiple of same are in a line
-                if numZeros == 2 or numZeros == 3:  # and digit not in boxes[box]:
-                    cellOfZero = [i for i in range(9) if values[i] == 0]
-                    doTheThingRows = True  # set to False to turn off rows matching
-                    doTheThingCols = True  # set to False to turn off cols matching
-                    for i in range(len(cellOfZero)-1):
-                        if not (cellOfZero[i]//3) == (cellOfZero[i+1]//3):
-                            doTheThingRows = False
-                        if not cellOfZero[i] % 3 == cellOfZero[i+1] % 3:
-                            doTheThingCols = False
-                    if doTheThingCols:
-                        simplifiedCols[3*(box % 3) + cellOfZero[0] % 3][digit - 1][(box//3 + 1) % 3] = True
-                        simplifiedCols[3*(box % 3) + cellOfZero[0] % 3][digit - 1][(box//3 + 2) % 3] = True
-                    if doTheThingRows:
-                        simplifiedRows[3*(box//3) + (cellOfZero[0]//3)][digit - 1][(box+1) % 3] = True
-                        simplifiedRows[3*(box//3) + (cellOfZero[0]//3)][digit - 1][(box+2) % 3] = True
     return compileRows(rows)
 
 
