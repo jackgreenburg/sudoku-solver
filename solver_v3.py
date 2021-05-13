@@ -183,14 +183,9 @@ def checkCompatibility(puzzle, index):
 
 # take list and return columns
 def breakColumns(code):
-    columns = []
-
-    for i in range(9):
-        sColumn = []
-        for n in range(81):
-            if n % 9 == i:
-                sColumn.append(code[n])
-        columns.append(sColumn)
+    columns = [[0 for _ in range(9)] for _ in range(9)]
+    for i in range(81):
+        columns[i % 9][i // 9] = code[i]
     return columns
 
 
@@ -216,9 +211,7 @@ def breakBoxes(code):
 
 # take boxes and return list
 def compileBoxes(boxes):
-    numbers = []
-    for i in range(81):
-        numbers.append(0)
+    numbers = [0 for _ in range(81)]
     for box in range(9):
         for cell in range(9):
             numberIndex = int((27 * (box // 3)) + (3 * (box % 3)) + (9 * (cell // 3)) + (cell % 3))
