@@ -146,6 +146,7 @@ class Puzzle:
             # create a 9x9 matrix for the column containing the pencil marks
             colPencilMarks = np.array([cell.pencilMarks for cell in subsect])
 
+            cellMatchingList = {}
             # transpose the pencil mark matrix to get it to be each row being a digit, the column being the cell
             for digit, pencilMarks in enumerate(np.transpose(colPencilMarks)):
                 # this first check is unnecessary, its just security i guess
@@ -159,7 +160,16 @@ class Puzzle:
                     if True:  # update pencil marks on the fly
                         self.updatePencilMarks(subsect[indices[0]], digit, info)
                     found += 1
-
+                # this seems to increase run time by 20-30 percent (if no gains made)
+                # when allowed to work it actually increases speed
+                elif len(indices) == 2:
+                    if indices.tobytes() in cellMatchingList:
+                        #print(subsect)
+                        #print("a", digit, cellMatchingList)
+                        pass
+                        self.updatePencilMarksSmall(subsect, cellMatchingList[indices.tobytes()], digit)
+                    else:
+                        cellMatchingList[indices.tobytes()] = (digit, indices)
 
             # print(81 - compileRows(matrix).count("0")) #len(np.where(compileRows(matrix) == "0")[0]))
 
@@ -178,8 +188,25 @@ class Puzzle:
         for cell in self.boxMatrix[cellToUpdate.boxIndex]:
             cell.pencilMarks[digit] = True
 
-    def updatePencilMarksSmall(self, digit1, digit2):
-        pass
+
+    def updatePencilMarksSmall(self, subsect, digIndTuple, digit):
+        #if len(subsect[digIndTuple[1][0]].pencilMarks) < 3 or len(subsect[digIndTuple[1][1]].pencilMarks) < 3:
+        #    return  # this check makes it slower (useful for checking when this is called)
+        #print(repr(subsect[digIndTuple[1][0]]), digIndTuple, digit, subsect)
+        for i in range(9):
+            if i != digIndTuple[0] and i != digit:
+                subsect[digIndTuple[1][0]].pencilMarks[i] = True
+                subsect[digIndTuple[1][1]].pencilMarks[i] = True
+        #print(repr(subsect[digIndTuple[1][0]]), digIndTuple, digit)
+
+    # this function has never been tested, it would be used in a non transposed pencil mark situation
+    # ex: if two cells both have only 1 and 7 as options, 1 and 7 can be removed from pencil marks for other cells
+    def updatePencilMarksSmallII(self, subsect, digIndTuple, digit):
+        for i, cell in enumerate(subsect):
+            if i not in digIndTuple[1]:
+                cell.pencilMarks[digit] = True
+                cell.pencilMarks[digIndTuple[1]] = True
+
 
     def checkSolved(self):
         for cell in self.cellsList:
@@ -189,97 +216,11 @@ class Puzzle:
 
     """
     find square with two options, make new Puzzle and attempt to solve
+    cells could be copied individually or values could be copied into new non object list
+    since Puzzle() creates cells I think the values need to be put into a list and a new Puzzle should be created
     """
     def bowmansBingo(self):
         pass
-
-    def setSimplified(self):
-        # first loop over values to set simplified cols and rows arrays
-        # this should not be done every time, one should be initialized and then updated (probably)
-        # also, the values list is obviously done twice per cell per digit
-        code = self.puzzList
-        rows = breakRows(code)
-        columns = breakColumns(code)
-        boxes = breakBoxes(code)
-
-        for box in range(9):  # loop through boxes
-            for digit in range(1, 10):  # loop through digits
-                # checks if all cells of box are valid sports for digit
-                values = [0, 0, 0, 0, 0, 0, 0, 0, 0]  # "index" of box
-                if digit in boxes[box] or False:
-                    for i in range(9):
-                        values[i] = 1
-                else:
-                    for cell in range(9):
-                        r = 3 * (box // 3) + (cell // 3)
-                        c = 3 * (box % 3) + cell % 3
-                        if boxes[box][cell] != 0 \
-                                or digit in rows[r] \
-                                or digit in columns[c] \
-                                or self.simplifiedRows[r][digit - 1][box % 3] \
-                                or self.simplifiedCols[c][digit - 1][box // 3]:
-                            values[cell] = 1
-
-                    # check if multiple of same are in a line
-                    numZeros = values.count(0)
-                    if numZeros == 2 or numZeros == 3:  # and digit not in boxes[box]:
-                        cellOfZero = [i for i in range(9) if values[i] == 0]
-                        doTheThingRows = True  # set to False to turn off rows matching
-                        doTheThingCols = True  # set to False to turn off cols matching
-                        for i in range(len(cellOfZero) - 1):
-                            if not (cellOfZero[i] // 3) == (cellOfZero[i + 1] // 3):
-                                doTheThingRows = False
-                            if not cellOfZero[i] % 3 == cellOfZero[i + 1] % 3:
-                                doTheThingCols = False
-                        if doTheThingCols:
-                            self.simplifiedCols[3 * (box % 3) + cellOfZero[0] % 3][digit - 1][(box // 3 + 1) % 3] = True
-                            self.simplifiedCols[3 * (box % 3) + cellOfZero[0] % 3][digit - 1][(box // 3 + 2) % 3] = True
-                        if doTheThingRows:
-                            self.simplifiedRows[3 * (box // 3) + (cellOfZero[0] // 3)][digit - 1][(box + 1) % 3] = True
-                            self.simplifiedRows[3 * (box // 3) + (cellOfZero[0] // 3)][digit - 1][(box + 2) % 3] = True
-
-    # this code solves puzzles using only logical processes
-    # it is needed in order to ensure puzzles can be solved without guessing
-    # cannot easily use puzzle object that was used in v1 due to the recursion required
-    def checkPuzzleAdvanced(self):
-        code = self.puzzList
-        rows = breakRows(code)
-        columns = breakColumns(code)
-        boxes = breakBoxes(code)
-        # now loop over to check
-        for box in range(9):  # loop through boxes
-            for digit in range(1, 10):  # loop through digits
-                # checks if all cells of box are valid sports for digit
-                values = [0, 0, 0, 0, 0, 0, 0, 0, 0]  # "index" of box
-                if digit in boxes[box] or False:
-                    for i in range(9):
-                        values[i] = 1
-                else:
-                    for cell in range(9):
-                        r = 3 * (box // 3) + (cell // 3)
-                        c = 3 * (box % 3) + cell % 3
-                        if boxes[box][cell] != 0 \
-                                or digit in rows[r] \
-                                or digit in columns[c] \
-                                or self.simplifiedRows[r][digit - 1][box % 3] \
-                                or self.simplifiedCols[c][digit - 1][box // 3]:
-                            values[cell] = 1
-                    numZeros = values.count(0)
-                    # loop through cells in box
-                    for cell in range(9):
-                        if digit not in boxes[box]:
-                            row = 3 * (box // 3) + (cell // 3)
-                            numb = (27 * (box // 3)) + (3 * (box % 3)) + (9 * (cell // 3)) + (
-                                    cell % 3)  # this is the current cells index position, i think
-                            column = numb % 3 + 3 * ((numb // 3) % 3)  # columnIndex[counter]
-
-                            if numZeros == 1 and digit not in rows[row] and digit not in \
-                                    columns[column] and rows[row][column] == 0 and values[cell] == 0:
-                                rows[row][column] = digit
-                                numeros = compileRows(rows)
-                                columns = breakColumns(numeros)
-                                boxes = breakBoxes(numeros)
-        return compileRows(rows)
 
 
 # create new solved sudoku
@@ -474,6 +415,7 @@ def breakBoxes(code):
         broken[i // 9][i % 9] = code[int(i + 6 * ((i // 3) % 3 - (i % 27) // 9))]
     return broken
 
+
 # take boxes and return list
 def compileBoxes(boxes):
     numbers = [0 for _ in range(81)]
@@ -620,22 +562,23 @@ if __name__ == "__main__":
 
     #print(np.where([0, 1, 0, 1, 1, 0, 0, 0, 1] == 1))
     reps = 1
+    # hard1 = Puzzle(trim(generate()))
+    hard1 = Puzzle(sudokus["expert1"])
     start = time.time()
-    for i in range(reps):
-        hard1 = Puzzle(sudokus["hard1"])
+    for _ in range(reps):
         hard1.setBasicPencilMarks()
         while (response == "y" or response[0] == "p") and True:
             hard1.checkPencilMarks()
-            response = input("y/[n]:")
+            #response = input("y/[n]:")
             if response[0] == "p":
                 if len(response) > 3:
-                    b = int(response[3])
-                    print([print(cell.getPencilMarks()) for cell in hard1.boxMatrix[b]])
+                    bb = int(response[3])
+                    print([print(cell.getPencilMarks()) for cell in hard1.boxMatrix[bb]])
                 if len(response) > 2:
-                    c = int(response[2])
-                    print([print(cell.getPencilMarks()) for cell in hard1.colsMatrix[c]],"\n")
-                r = int(response[1])
-                print([print(cell.getPencilMarks(), cell.pencilMarks) for cell in hard1.rowsMatrix[r]],"\n")
+                    cc = int(response[2])
+                    print([print(cell.getPencilMarks()) for cell in hard1.colsMatrix[cc]],"\n")
+                rr = int(response[1])
+                print([print(cell.getPencilMarks(), cell.pencilMarks) for cell in hard1.rowsMatrix[rr]],"\n")
                 #popup(hard1.cellsList)
             if hard1.checkSolved():
                 #print("solved!")
@@ -646,5 +589,4 @@ if __name__ == "__main__":
     popup(hard1.cellsList)
     print("correct ==", sudokus["hard1Solved"] == [cell.value for cell in hard1.cellsList])
     print(sudokus["hard1"].count(0))
-
 
