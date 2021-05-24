@@ -20,7 +20,7 @@ regloops, boxloops, colloops, tranloops, found, trancalled = 0, 0, 0, 0, 0, 0
 # returns, perform and operation on returned set of values to get reduced set
 def check9(nine):
     # False means empty, true means filled, loosely
-    filledCells = [False for _ in range(9)]
+    filledCells = [False, False, False, False, False, False, False, False, False]
     for i, cell in enumerate(nine):
         if cell.value != 0:
             filledCells[i] = True
@@ -48,7 +48,7 @@ def interpetPencil9(ninexnine):
 class Cell:
     def __init__(self, value, i):
         self.value = value
-        self.pencilMarks = [False for _ in range(9)]
+        self.pencilMarks = [False, False, False, False, False, False, False, False, False]
         self.rowIndex = i // 9
         self.colIndex = i % 9
         self.boxIndex = 3 * (i // 27) + (i % 9) // 3
@@ -67,6 +67,9 @@ class Cell:
         for i in range(9):
             self.pencilMarks[i] = self.pencilMarks[i] or pmarks[i]
 
+    def getPencilMarks(self):
+        return np.where(np.asarray(self.pencilMarks) == False)[0] + 1
+
 
 class Puzzle:
     """
@@ -78,9 +81,9 @@ class Puzzle:
         self.cellsList = np.array([Cell(puzzList[i], i) for i in range(81)])
         self.puzzSolved = None
         # row then digit then column of box
-        self.simplifiedRows = [[[False for _ in range(3)] for _ in range(9)] for _ in range(9)]
+        #self.simplifiedRows = [[[False for _ in range(3)] for _ in range(9)] for _ in range(9)]
         # column then digit then row of box
-        self.simplifiedCols = [[[False for _ in range(3)] for _ in range(9)] for _ in range(9)]
+        #self.simplifiedCols = [[[False for _ in range(3)] for _ in range(9)] for _ in range(9)]
 
         #self.pencilMarks = [[] for _ in range(9)]
 
@@ -113,27 +116,29 @@ class Puzzle:
         # list comprehension is almost twice as fast as row compiling then breaking into columns
         for i, cell in enumerate(self.cellsList):
             ####
-            #np.where(np.array(cell.pencilMarks) == False)
+            #indices = [i for i in range(9) if not cell.pencilMarks[i]] #np.where(np.asarray(cell.pencilMarks) == False)[0]
+            #print(indices)
             ####
-            if cell.pencilMarks.count(False) == 0 and cell.value == 0:
-                print("FUCKFUCKFUCK")
-            elif cell.pencilMarks.count(False) == 1:
+            count = cell.pencilMarks.count(False)
+            #if count == 0 and cell.value == 0:#cell.pencilMarks.count(False) == 0 and cell.value == 0:#len(indices) == 0 and cell.value == 0:#
+            #    print("FUCKFUCKFUCK")
+            if count == 1: #len(indices) == 1: # cell.pencilMarks.count(False) == 1:
                 #print(f"row {i//9 + 1} col {i%9 + 1} becomes {cell.pencilMarks.index(False) + 1} due to it being the only valid digit for that cell")
-                cell.value = cell.pencilMarks.index(False) + 1
+                #cell.value = cell.pencilMarks.index(False) + 1 #indices[0] + 1 #
                 # can't do this because it might make another cell that doesn't have update pencil marks seem right
                 #cell.setPencilMarks([True, True, True, True, True, True, True, True, True])
                 #self.setBasicPencilMarks()
                 found += 1
-                self.updatePencilMarks(cell, cell.pencilMarks.index(False))
+                self.updatePencilMarks(cell, cell.pencilMarks.index(False), "only valid digit for that cell") #indices[0] )#
             regloops += 1
 
         # until I can selectively mark pencil marks upon changes
         # it is ~3 times faster to just risk calculating multiple values
-        self.checkTranspose(self.boxMatrix, "boxes")
-        self.checkTranspose(self.colsMatrix, "cols")
-        self.checkTranspose(self.rowsMatrix, "rows")
+        self.checkTranspose(self.boxMatrix, "only valid cell for that digit (box wise)")
+        self.checkTranspose(self.colsMatrix, "only valid cell for that digit (col wise)")
+        self.checkTranspose(self.rowsMatrix, "only valid cell for that digit (row wise)")
 
-    def checkTranspose(self, matrix, mtype):
+    def checkTranspose(self, matrix, info):
         global trancalled
         trancalled += 1
         for i, subsect in enumerate(matrix):
@@ -149,16 +154,19 @@ class Puzzle:
                 if len(indices) == 1:
                     #print(f"row {subsect[indices[0]].rowIndex + 1 } col {subsect[indices[0]].colIndex + 1} becomes {digit + 1} due to it being the only valid cell for that digit (found in transpose func-{mtype})")
 
-                    subsect[indices[0]].value = digit + 1
+                    #subsect[indices[0]].value = digit + 1
                     # must mark cell as filled
                     if True:  # update pencil marks on the fly
-                        self.updatePencilMarks(subsect[indices[0]], digit)
+                        self.updatePencilMarks(subsect[indices[0]], digit, info)
                     found += 1
 
 
             # print(81 - compileRows(matrix).count("0")) #len(np.where(compileRows(matrix) == "0")[0]))
 
-    def updatePencilMarks(self, cellToUpdate, digit):
+    def updatePencilMarks(self, cellToUpdate, digit, info):
+        #print(f"row {cellToUpdate.rowIndex + 1} col {cellToUpdate.colIndex + 1} becomes {digit + 1} due to it being {info}")
+
+        cellToUpdate.value = digit + 1
         cellToUpdate.setPencilMarks([True, True, True, True, True, True, True, True, True])
         # must set all marks at that digit in column as filled
         for cell in self.colsMatrix[cellToUpdate.colIndex]:
@@ -169,6 +177,9 @@ class Puzzle:
         # must set all marks at that digit in box as filled
         for cell in self.boxMatrix[cellToUpdate.boxIndex]:
             cell.pencilMarks[digit] = True
+
+    def updatePencilMarksSmall(self, digit1, digit2):
+        pass
 
     def checkSolved(self):
         for cell in self.cellsList:
@@ -600,33 +611,32 @@ if __name__ == "__main__":
         sudokus = json.load(f)
 
     easy1 = Puzzle(sudokus["easy1"])
+    #expert1 = Puzzle(sudokus["expert1"])
 
-
-    #popupSolver(sudokus["hard1"])
+    #popupSolver(sudokus["expert1"])
 
     import time
     response = "y"
 
-    #print(np.where([False, True, False, True, True, False, False, False, False]))
-    reps = 100
+    #print(np.where([0, 1, 0, 1, 1, 0, 0, 0, 1] == 1))
+    reps = 1
     start = time.time()
     for i in range(reps):
         hard1 = Puzzle(sudokus["hard1"])
+        hard1.setBasicPencilMarks()
         while (response == "y" or response[0] == "p") and True:
-            hard1.setBasicPencilMarks()
             hard1.checkPencilMarks()
-            #response = input("y/[n]:")
+            response = input("y/[n]:")
             if response[0] == "p":
-
-                print(hard1.colsMatrix[0])
-                print(hard1.rowsMatrix[0])
-                hard1.colsMatrix[0][0] = False
-                print(hard1.rowsMatrix[0])
-                #print(hard1.boxMatrix[4])
-                #print(hard1.colsMatrix[4])
-                #print(hard1.rowsMatrix[4])
-                #bxs = breakBoxes(hard1.cellsList)
-                popup(hard1.cellsList)
+                if len(response) > 3:
+                    b = int(response[3])
+                    print([print(cell.getPencilMarks()) for cell in hard1.boxMatrix[b]])
+                if len(response) > 2:
+                    c = int(response[2])
+                    print([print(cell.getPencilMarks()) for cell in hard1.colsMatrix[c]],"\n")
+                r = int(response[1])
+                print([print(cell.getPencilMarks(), cell.pencilMarks) for cell in hard1.rowsMatrix[r]],"\n")
+                #popup(hard1.cellsList)
             if hard1.checkSolved():
                 #print("solved!")
                 break
